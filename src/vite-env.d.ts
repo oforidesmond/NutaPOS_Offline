@@ -1,0 +1,15 @@
+/// <reference types="vite/client" />
+/// <reference types="vite-plugin-pwa/client" />
+
+interface ImportMetaEnv {
+  readonly VITE_API_URL?: string;
+  readonly VITE_API_PREFIX?: string;
+  /** `true` / `1` / `yes` shows Discard on Failed sales; anything else hides it. */
+  readonly VITE_ALLOW_DISCARD_FAILED_SALES?: string;
+  readonly VITE_LICENSE_PUBLIC_KEY?: string;
+  readonly VITE_SUPPORT_PHONE?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
+}
