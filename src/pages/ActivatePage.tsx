@@ -46,7 +46,7 @@ export function ActivatePage() {
       <div className="hero hero-compact">
         <p style={text.title1}>Activate this device</p>
         <p style={text.callout}>
-          Enter the activation code from Nuta support. Needs a brief internet connection once. After that, the shop runs offline.
+          Enter the activation code from Nuta support. Needs a brief internet connection once. After that, the business runs offline.
         </p>
       </div>
       <form className="stack" onSubmit={onSubmit}>

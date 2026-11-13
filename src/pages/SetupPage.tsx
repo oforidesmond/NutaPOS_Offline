@@ -52,13 +52,13 @@ export function SetupPage() {
   };
 
   return (
-    <Screen header={<GlassHeader title="Shop setup" />}>
+    <Screen header={<GlassHeader title="Business setup" />}>
       <div className="hero hero-compact">
         <p style={text.title1}>Set up this device</p>
         <p style={text.callout}>Create an admin PIN and optional sales agent. Works fully offline after activation.</p>
       </div>
       <form className="stack" onSubmit={onSubmit}>
-        <TextField label="Shop name" value={shopName} onChange={(e) => setShopName(e.target.value)} required />
+        <TextField label="Business name" value={shopName} onChange={(e) => setShopName(e.target.value)} required />
         <TextField label="Admin username" value={adminUsername} onChange={(e) => setAdminUsername(e.target.value)} required />
         <TextField
           label="Admin PIN"

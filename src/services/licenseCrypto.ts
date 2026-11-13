@@ -6,22 +6,69 @@ type VerifyKey = CryptoKey | Uint8Array;
 
 let cachedKey: VerifyKey | null = null;
 
+/**
+ * Peel generate-script / .env encoding until we have PEM or a JWK object string.
+ * Broken forms that caused "Expected property name... position 1":
+ *   "{\"crv\":...}"   and   {\"crv\":\"Ed25519\",...}
+ */
+function normalizePemOrJwk(raw: string): string {
+  let value = raw.trim();
+  for (let i = 0; i < 4; i++) {
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    if (value.includes('\\"') || value.includes('\\n')) {
+      value = value.replace(/\\n/g, '\n').replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+    }
+    value = value.trim();
+    try {
+      const parsed = JSON.parse(value) as unknown;
+      if (typeof parsed === 'string') {
+        value = parsed.trim();
+        continue;
+      }
+      if (parsed && typeof parsed === 'object') {
+        return JSON.stringify(parsed);
+      }
+    } catch {
+      /* not JSON yet */
+    }
+    break;
+  }
+  return value.trim();
+}
+
+function jwkAlg(jwk: JWK): string {
+  if (jwk.crv === 'Ed25519' || jwk.kty === 'OKP') return 'EdDSA';
+  if (jwk.crv === 'P-256' || jwk.alg === 'ES256') return 'ES256';
+  return 'EdDSA';
+}
+
 async function loadPublicKey(): Promise<VerifyKey> {
   if (cachedKey) return cachedKey;
   const raw = getLicensePublicKey();
   if (!raw) {
     throw new Error('License public key is not configured (VITE_LICENSE_PUBLIC_KEY)');
   }
-  if (raw.startsWith('{')) {
-    cachedKey = (await importJWK(JSON.parse(raw) as JWK, 'EdDSA')) as VerifyKey;
+  const normalized = normalizePemOrJwk(raw);
+  try {
+    if (normalized.startsWith('{')) {
+      const jwk = JSON.parse(normalized) as JWK;
+      cachedKey = (await importJWK(jwk, jwkAlg(jwk))) as VerifyKey;
+      return cachedKey;
+    }
+    const pem = normalized.includes('BEGIN')
+      ? normalized
+      : `-----BEGIN PUBLIC KEY-----\n${normalized}\n-----END PUBLIC KEY-----`;
+    cachedKey = (await importSPKI(pem, 'EdDSA')) as VerifyKey;
     return cachedKey;
+  } catch (e) {
+    const detail = e instanceof Error ? e.message : 'unknown error';
+    throw new Error(`License public key is invalid (${detail})`);
   }
-  // Assume SPKI PEM or base64-encoded SPKI
-  const pem = raw.includes('BEGIN')
-    ? raw
-    : `-----BEGIN PUBLIC KEY-----\n${raw}\n-----END PUBLIC KEY-----`;
-  cachedKey = (await importSPKI(pem, 'EdDSA')) as VerifyKey;
-  return cachedKey;
 }
 
 export async function hashEntitlementToken(token: string): Promise<string> {

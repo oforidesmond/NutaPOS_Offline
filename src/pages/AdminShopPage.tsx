@@ -42,9 +42,9 @@ function AdminShopInner() {
   };
 
   return (
-    <Screen header={<GlassHeader title="Shop settings" backTo="/admin" />}>
+    <Screen header={<GlassHeader title="Business settings" backTo="/admin" />}>
       <form className="stack" onSubmit={onSubmit}>
-        <TextField label="Shop name" value={shopName} onChange={(e) => setShopName(e.target.value)} />
+        <TextField label="Business name" value={shopName} onChange={(e) => setShopName(e.target.value)} />
         <label style={text.body}>
           <input type="checkbox" checked={taxEnabled} onChange={(e) => setTaxEnabled(e.target.checked)} /> Tax enabled
         </label>
