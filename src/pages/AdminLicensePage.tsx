@@ -39,7 +39,7 @@ function AdminLicenseInner() {
             });
           }}
         />
-        <Button title="Pay / renew" variant="secondary" to="/paywall" />
+        <Button title="Pay / renew" variant="secondary" to="/paywall?renew=1" />
       </div>
     </Screen>
   );

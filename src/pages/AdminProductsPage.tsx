@@ -14,6 +14,7 @@ function AdminProductsInner() {
   const [products, setProducts] = useState<Product[]>([]);
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
+  const [costPrice, setCostPrice] = useState('');
   const [stock, setStock] = useState('0');
   const [barcode, setBarcode] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -33,8 +34,14 @@ function AdminProductsInner() {
     setError(null);
     const priceNum = Number(price);
     const stockNum = Number(stock);
+    const costTrimmed = costPrice.trim();
+    const costNum = costTrimmed === '' ? null : Number(costTrimmed);
     if (!name.trim() || !Number.isFinite(priceNum) || priceNum < 0) {
-      setError('Enter a valid name and price');
+      setError('Enter a valid name and selling price');
+      return;
+    }
+    if (costNum != null && (!Number.isFinite(costNum) || costNum < 0)) {
+      setError('Enter a valid cost price, or leave it blank');
       return;
     }
     const now = new Date().toISOString();
@@ -42,6 +49,7 @@ function AdminProductsInner() {
       await db.products.update(editing.id, {
         name: name.trim(),
         price: priceNum,
+        cost_price: costNum,
         stock_quantity: Number.isFinite(stockNum) ? stockNum : editing.stock_quantity,
         barcode: barcode.trim() || null,
         updated_at: now,
@@ -52,7 +60,7 @@ function AdminProductsInner() {
         id,
         name: name.trim(),
         price: priceNum,
-        cost_price: null,
+        cost_price: costNum,
         stock_quantity: Number.isFinite(stockNum) ? stockNum : 0,
         barcode: barcode.trim() || null,
         sku: null,
@@ -66,6 +74,7 @@ function AdminProductsInner() {
     setEditing(null);
     setName('');
     setPrice('');
+    setCostPrice('');
     setStock('0');
     setBarcode('');
     await reload();
@@ -75,6 +84,7 @@ function AdminProductsInner() {
     setEditing(p);
     setName(p.name);
     setPrice(String(p.price));
+    setCostPrice(p.cost_price != null ? String(p.cost_price) : '');
     setStock(String(p.stock_quantity));
     setBarcode(p.barcode ?? '');
   };
@@ -105,7 +115,14 @@ function AdminProductsInner() {
       <form className="stack" onSubmit={saveProduct}>
         <p style={text.headline}>{editing ? 'Edit product' : 'Add product'}</p>
         <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
-        <TextField label="Price (GHS)" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} required />
+        <TextField label="Selling price (GHS)" inputMode="decimal" value={price} onChange={(e) => setPrice(e.target.value)} required />
+        <TextField
+          label="Cost price (GHS)"
+          inputMode="decimal"
+          value={costPrice}
+          onChange={(e) => setCostPrice(e.target.value)}
+          placeholder="Optional"
+        />
         <TextField label="Stock" inputMode="decimal" value={stock} onChange={(e) => setStock(e.target.value)} />
         <TextField label="Barcode" value={barcode} onChange={(e) => setBarcode(e.target.value)} />
         {error ? <FeedbackBanner variant="error" message={error} /> : null}
@@ -118,6 +135,7 @@ function AdminProductsInner() {
               setEditing(null);
               setName('');
               setPrice('');
+              setCostPrice('');
               setStock('0');
               setBarcode('');
             }}
@@ -131,7 +149,8 @@ function AdminProductsInner() {
         {products.map((p) => (
           <div key={p.id} className="list-row" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={text.body}>
-              {p.name} · GHS {p.price} · stock {p.stock_quantity}
+              {p.name} · sell GHS {p.price}
+              {p.cost_price != null ? ` · cost GHS ${p.cost_price}` : ''} · stock {p.stock_quantity}
             </div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <Button title="Edit" variant="secondary" onClick={() => startEdit(p)} />

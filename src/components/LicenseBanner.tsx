@@ -10,7 +10,7 @@ export function LicenseBanner() {
   return (
     <div className="banner-warning" role="status" style={{ ...text.footnote, padding: '10px 14px' }}>
       <span>{licenseStatus.message} </span>
-      <Link to="/paywall">Pay now</Link>
+      <Link to="/paywall?renew=1">Pay now</Link>
     </div>
   );
 }

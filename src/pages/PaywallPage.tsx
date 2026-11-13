@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { FeedbackBanner } from '@/components/FeedbackBanner';
 import { GlassHeader } from '@/components/GlassHeader';
@@ -14,6 +14,9 @@ import { text } from '@/theme';
 
 export function PaywallPage() {
   const { hydrated, licenseStatus, refreshLicense, activated } = useAuth();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const renewIntent = searchParams.get('renew') === '1';
   const [phone, setPhone] = useState('');
   const [provider, setProvider] = useState<'mtn' | 'atl' | 'vod'>('mtn');
   const [unlockCode, setUnlockCode] = useState('');
@@ -21,6 +24,7 @@ export function PaywallPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
+  const blocked = Boolean(licenseStatus && licenseService.isBlocked(licenseStatus));
 
   useEffect(() => {
     void refreshLicense();
@@ -28,7 +32,9 @@ export function PaywallPage() {
 
   if (!hydrated) return null;
   if (!activated) return <Navigate to="/activate" replace />;
-  if (licenseStatus && !licenseService.isBlocked(licenseStatus)) {
+  // Valid license used to bounce /paywall → /pos immediately, which made Pay / renew look broken.
+  // Allow an explicit renew visit; still leave the forced paywall once unlocked.
+  if (licenseStatus && !blocked && !renewIntent) {
     return <Navigate to="/pos" replace />;
   }
 
@@ -64,6 +70,7 @@ export function PaywallPage() {
           await licenseService.applyEntitlementToken(status.entitlementToken, status.serverTime);
           await refreshLicense();
           setMessage('Payment confirmed. Unlocking…');
+          navigate(renewIntent ? '/admin/license' : '/pos', { replace: true });
           return;
         }
         if (status.status === 'failed') {
@@ -86,6 +93,7 @@ export function PaywallPage() {
     try {
       await licenseService.applySupportUnlock(unlockCode);
       await refreshLicense();
+      navigate(renewIntent ? '/admin/license' : '/pos', { replace: true });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Invalid unlock code');
     } finally {
@@ -98,7 +106,10 @@ export function PaywallPage() {
     setError(null);
     try {
       await licenseService.pullIfOnline();
-      await refreshLicense();
+      const status = await refreshLicense();
+      if (!licenseService.isBlocked(status)) {
+        navigate(renewIntent ? '/admin/license' : '/pos', { replace: true });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not refresh license');
     } finally {
@@ -107,9 +118,9 @@ export function PaywallPage() {
   };
 
   return (
-    <Screen header={<GlassHeader title="Subscription" />}>
+    <Screen header={<GlassHeader title="Subscription" backTo={renewIntent ? '/admin/license' : undefined} />}>
       <div className="hero hero-compact">
-        <p style={text.title1}>Renew to continue</p>
+        <p style={text.title1}>{blocked ? 'Renew to continue' : 'Pay / renew'}</p>
         <p style={text.callout}>
           {licenseStatus?.message ||
             'Connect briefly to the internet to pay, or call support to renew. The app unlocks after payment is confirmed.'}
