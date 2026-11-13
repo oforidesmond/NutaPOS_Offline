@@ -22,6 +22,15 @@ export type PayInitiateResponse = {
   displayText: string;
   status: string;
   amountGhs: number;
+  /** Paystack sometimes requires an OTP before the MoMo phone prompt. */
+  needsOtp?: boolean;
+};
+
+export type PayOtpResponse = {
+  reference: string;
+  status: string;
+  displayText: string;
+  needsOtp?: boolean;
 };
 
 export type PayStatusResponse = {
@@ -29,6 +38,7 @@ export type PayStatusResponse = {
   entitlementToken?: string;
   displayText?: string;
   serverTime?: string;
+  needsOtp?: boolean;
 };
 
 export type LicensePullResponse = {
@@ -62,6 +72,14 @@ export const licenseApi = {
   async paymentStatus(reference: string): Promise<PayStatusResponse> {
     const { data } = await client().get(buildApiPath(`/offline-license/pay/${encodeURIComponent(reference)}`));
     return data as PayStatusResponse;
+  },
+
+  async submitPaymentOtp(reference: string, otp: string): Promise<PayOtpResponse> {
+    const { data } = await client().post(
+      buildApiPath(`/offline-license/pay/${encodeURIComponent(reference)}/otp`),
+      { otp },
+    );
+    return data as PayOtpResponse;
   },
 
   async pullEntitlement(input: {
