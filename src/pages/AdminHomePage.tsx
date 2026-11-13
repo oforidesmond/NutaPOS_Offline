@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { GlassHeader } from '@/components/GlassHeader';
 import { Screen } from '@/components/Screen';
@@ -8,6 +8,7 @@ import { text } from '@/theme';
 
 function AdminHomeInner() {
   const { lockAdmin, licenseStatus } = useAuth();
+  const navigate = useNavigate();
 
   return (
     <Screen header={<GlassHeader title="Admin" backTo="/pos" />}>
@@ -38,6 +39,7 @@ function AdminHomeInner() {
           variant="secondary"
           onClick={() => {
             lockAdmin();
+            navigate('/pos', { replace: true });
           }}
         />
       </div>

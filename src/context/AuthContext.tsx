@@ -12,6 +12,11 @@ import { clearStoredTokens, getStoredAccessToken } from '@/api/client';
 import { userRepository } from '@/db/userRepository';
 import type { LocalRole, LocalUser } from '@/db/schema';
 import { settingsRepository } from '@/db/settingsRepository';
+import {
+  clearAuthSession,
+  isAuthSessionActive,
+  markAuthSessionActive,
+} from '@/lib/authSession';
 import { clearDeviceBindingFlag } from '@/services/deviceBindingService';
 import { licenseService } from '@/services/licenseService';
 import {
@@ -67,11 +72,20 @@ function toProfile(user: LocalUser, orgId: string | null): UserProfile {
  * Kept compatible with staff-pwa logout tests where possible.
  */
 export async function logoutSession(): Promise<void> {
+  clearAuthSession();
   useNotificationStore.getState().reset();
   await clearStoredTokens();
   await clearUserProfile();
   await clearDeviceBindingFlag();
   await settingsRepository.setInitialSyncDone(false);
+}
+
+/** Drop persisted login when the browser/PWA session is new (app was closed). */
+export async function endStaleAuthSession(): Promise<void> {
+  if (isAuthSessionActive()) return;
+  useNotificationStore.getState().reset();
+  await clearStoredTokens();
+  await clearUserProfile();
 }
 
 /** Staff-pwa compatibility helper — offline edition has no cloud bind flags to roll back after token loss. */
@@ -132,7 +146,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setActivated(isActivated);
       await settingsRepository.setInitialSyncDone(hasAdmin && isActivated);
 
-      const profile = await loadUserProfile();
+      // New browser/PWA open → require PIN again (sessionStorage does not survive close).
+      await endStaleAuthSession();
+
+      const profile = isAuthSessionActive() ? await loadUserProfile() : null;
       if (profile) {
         const local = await userRepository.getById(profile.userId);
         if (local && local.is_active === 1) {
@@ -140,6 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(profile);
         } else {
           await clearUserProfile();
+          clearAuthSession();
         }
       }
 
@@ -158,6 +176,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const org = await settingsRepository.getJson<OrganizationDto>(settingsRepository.keys.organization);
     const profile = toProfile(local, org?.id ?? null);
     await saveUserProfile(profile);
+    markAuthSessionActive();
     setLocalUser(local);
     setUser(profile);
     setAdminUnlocked(local.role === 'ADMIN');

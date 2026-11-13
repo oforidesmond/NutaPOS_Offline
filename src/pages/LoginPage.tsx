@@ -52,7 +52,7 @@ export function LoginPage() {
       <div className="hero hero-compact">
         <img className="hero-mark" src="/icons/icon-192.png" width={80} height={80} alt="" />
         <p style={text.title1}>NutaPOS</p>
-        <p style={text.callout}>Offline shop sign-in</p>
+        <p style={text.callout}>Offline sign-in</p>
       </div>
       <form className="stack" onSubmit={onSubmit} noValidate>
         <TextField

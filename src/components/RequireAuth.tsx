@@ -24,9 +24,10 @@ export function RequireReady({ children }: { children: ReactNode }) {
 }
 
 export function RequireAdmin({ children }: { children: ReactNode }) {
-  const { hydrated, user, adminUnlocked, localUser } = useAuth();
+  const { hydrated, user, adminUnlocked } = useAuth();
   if (!hydrated) return <SplashMark />;
   if (!user) return <Navigate to="/login" replace />;
-  if (localUser?.role === 'ADMIN' || adminUnlocked) return children;
+  // Even the admin user must unlock (or re-unlock after "Lock admin").
+  if (adminUnlocked) return children;
   return <Navigate to="/admin/unlock" replace />;
 }

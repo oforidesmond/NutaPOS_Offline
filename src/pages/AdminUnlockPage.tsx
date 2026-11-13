@@ -9,7 +9,7 @@ import { useAuth } from '@/context/AuthContext';
 import { text } from '@/theme';
 
 export function AdminUnlockPage() {
-  const { hydrated, user, adminUnlocked, localUser, unlockAdmin } = useAuth();
+  const { hydrated, user, adminUnlocked, unlockAdmin } = useAuth();
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -17,7 +17,7 @@ export function AdminUnlockPage() {
 
   if (!hydrated) return null;
   if (!user) return <Navigate to="/login" replace />;
-  if (localUser?.role === 'ADMIN' || adminUnlocked) return <Navigate to="/admin" replace />;
+  if (adminUnlocked) return <Navigate to="/admin" replace />;
 
   const onSubmit = async (event: FormEvent) => {
     event.preventDefault();

@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { PwaUpdateBanner } from '@/components/PwaUpdateBanner';
 import { RequireAdmin, RequireReady } from '@/components/RequireAuth';
 import { ToastHost } from '@/components/ToastHost';
 import { AuthProvider } from '@/context/AuthContext';
@@ -28,6 +29,7 @@ export function App() {
     <div style={cssVars as CSSProperties}>
       <AuthProvider>
         <BrowserRouter>
+          <PwaUpdateBanner />
           <Routes>
             <Route path="/" element={<BootstrapPage />} />
             <Route path="/setup" element={<SetupPage />} />

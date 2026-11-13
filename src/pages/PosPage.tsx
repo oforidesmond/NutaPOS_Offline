@@ -383,10 +383,38 @@ export function PosPage() {
       <Sheet open={menuOpen} title="Menu" onClose={() => setMenuOpen(false)}>
         <h2 style={text.title2}>Menu</h2>
         <div className="sheet-actions">
-          <Button title="Admin" variant="secondary" onClick={() => navigate('/admin/unlock')} />
-          <Button title="License" variant="secondary" onClick={() => navigate('/paywall')} />
-          <Button title="Settings" variant="secondary" onClick={() => navigate('/settings')} />
-          <Button title="Printer" variant="secondary" onClick={() => navigate('/printer-settings')} />
+          <Button
+            title="Admin"
+            variant="secondary"
+            onClick={() => {
+              setMenuOpen(false);
+              navigate('/admin/unlock');
+            }}
+          />
+          <Button
+            title="License"
+            variant="secondary"
+            onClick={() => {
+              setMenuOpen(false);
+              navigate('/admin/license');
+            }}
+          />
+          <Button
+            title="Settings"
+            variant="secondary"
+            onClick={() => {
+              setMenuOpen(false);
+              navigate('/settings');
+            }}
+          />
+          <Button
+            title="Printer"
+            variant="secondary"
+            onClick={() => {
+              setMenuOpen(false);
+              navigate('/printer-settings');
+            }}
+          />
           <Button title="Sign out" variant="dangerOutline" onClick={() => void onSignOut()} />
           <Button title="Cancel" variant="ghost" onClick={() => setMenuOpen(false)} />
         </div>
