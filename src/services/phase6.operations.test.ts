@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { db, type Product, type Sale, type SaleItem, type SyncQueueRow } from '@/db/schema';
+import { db, type LocalUser, type Product, type Sale, type SaleItem, type SyncQueueRow } from '@/db/schema';
 import { prefsRepository } from '@/db/prefsRepository';
 import { setAccessToken, getAccessToken } from '@/db/secretsRepository';
 import { settingsRepository } from '@/db/settingsRepository';
@@ -7,6 +7,21 @@ import { batchOperationsService } from '@/services/batchOperationsService';
 import { databaseBackupService } from '@/services/databaseBackupService';
 import { databaseIntegrityService } from '@/services/databaseIntegrityService';
 import { clockOffsetMinutes, isClockSkewed } from '@/services/timeValidationService';
+
+function localUser(overrides: Partial<LocalUser> = {}): LocalUser {
+  return {
+    id: 'u1',
+    username: 'admin',
+    display_name: 'Shop Admin',
+    role: 'ADMIN',
+    pin_hash: 'hash',
+    pin_salt: 'salt',
+    is_active: 1,
+    created_at: '2026-06-01T00:00:00.000Z',
+    updated_at: '2026-06-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
 
 function product(overrides: Partial<Product> = {}): Product {
   return {
@@ -142,26 +157,32 @@ describe('phase 6 local operations', () => {
     expect(csv).not.toContain('RCP-RET');
   });
 
-  it('keeps tokens out of a backup and restores products and sales', async () => {
+  it('keeps tokens out of a backup and restores products, sales, and users', async () => {
     await setAccessToken('super-secret-access');
     await prefsRepository.set('access_token', 'super-secret-access');
     await db.products.add(product({ name: 'Original' }));
     await db.sales.add(sale());
+    await db.users.add(localUser());
     const fileName = await databaseBackupService.createBackup({ download: false });
     const stored = await db.local_backups.get(fileName);
     const json = JSON.stringify(stored?.payload);
     expect(json).not.toContain('super-secret-access');
     expect(json).not.toContain('access_token');
     expect(json).toContain('Original');
+    expect(json).toContain('Shop Admin');
+    expect((stored?.payload as { version?: number })?.version).toBe(2);
 
     await db.products.update('p1', { name: 'Changed' });
     await db.sales.clear();
+    await db.users.clear();
     await databaseBackupService.restoreFromBackup(fileName);
 
     expect((await db.products.get('p1'))?.name).toBe('Original');
     expect(await db.sales.get('s1')).toBeTruthy();
+    expect((await db.users.get('u1'))?.username).toBe('admin');
     expect(await getAccessToken()).toBe('super-secret-access');
     expect(await prefsRepository.get('access_token')).toBeNull();
+    expect(await db.license_state.count()).toBe(0);
   });
 
   it('strips token keys when restoring a file', async () => {
@@ -171,15 +192,19 @@ describe('phase 6 local operations', () => {
       tables: {
         products: [product({ name: 'From file' })],
         sales: [],
+        users: [localUser({ username: 'restored-admin' })],
         prefs: [{ key: 'access_token', value: 'file-token' }, { key: 'installation_id', value: 'install-9' }],
         secrets: [{ key: 'access_token', value: 'file-token' }],
+        license_state: [{ id: 1, entitlement_token: 'should-not-import' }],
       },
     };
     await databaseBackupService.restoreFromFileContents(JSON.stringify(dirty));
     expect((await db.products.get('p1'))?.name).toBe('From file');
+    expect((await db.users.get('u1'))?.username).toBe('restored-admin');
     expect(await getAccessToken()).toBe('keep-me');
     expect(await prefsRepository.get('access_token')).toBeNull();
     expect(await prefsRepository.get('installation_id')).toBe('install-9');
+    expect(await db.license_state.count()).toBe(0);
   });
 
   it('auto-fixes a trial count that differs by more than 5', async () => {

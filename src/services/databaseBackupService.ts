@@ -1,7 +1,18 @@
-import { getStoredAccessToken } from '@/api/client';
-import { postStaffBackup } from '@/api/staffBackupApi';
-import { db, type PrefRow, type Product, type Sale, type SaleItem, type SettingRow, type SyncQueueRow, type TrialUsage } from '@/db/schema';
+import { postOfflineLicenseBackup } from '@/api/offlineLicenseBackupApi';
+import {
+  db,
+  type LocalUser,
+  type PrefRow,
+  type Product,
+  type Sale,
+  type SaleItem,
+  type SettingRow,
+  type StockMovement,
+  type SyncQueueRow,
+  type TrialUsage,
+} from '@/db/schema';
 import { prefsRepository } from '@/db/prefsRepository';
+import { licenseRepository } from '@/db/licenseRepository';
 import { downloadTextFile } from '@/lib/downloadFile';
 import { APP_VERSION, getOrCreateInstallationId } from '@/services/deviceFingerprint';
 
@@ -25,11 +36,13 @@ export type BackupTables = {
   trial_usage: TrialUsage[];
   settings: SettingRow[];
   prefs: PrefRow[];
+  users: LocalUser[];
+  stock_movements: StockMovement[];
 };
 
 export type BackupFile = {
   format: 'nutapos-staff-backup';
-  version: 1;
+  version: 1 | 2;
   created_at: string;
   device_id: string;
   app_version: string;
@@ -56,6 +69,8 @@ export function parseBackupFile(raw: unknown): BackupTables {
   if (!tables || typeof tables !== 'object') throw new Error('Unrecognized backup');
   const source = { ...(tables as Record<string, unknown>) };
   delete source.secrets;
+  delete source.license_state;
+  delete source.license_state_mirror;
   return {
     products: asRows<Product>(source.products),
     sales: asRows<Sale>(source.sales),
@@ -64,6 +79,8 @@ export function parseBackupFile(raw: unknown): BackupTables {
     trial_usage: asRows<TrialUsage>(source.trial_usage),
     settings: asRows<SettingRow>(source.settings),
     prefs: cleanPrefs(source.prefs),
+    users: asRows<LocalUser>(source.users),
+    stock_movements: asRows<StockMovement>(source.stock_movements),
   };
 }
 
@@ -101,15 +118,18 @@ function backupFileName(deviceId: string, createdAt: string): string {
 }
 
 async function readTables(): Promise<BackupTables> {
-  const [products, sales, saleItems, syncQueue, trialUsage, settings, prefs] = await Promise.all([
-    db.products.toArray(),
-    db.sales.toArray(),
-    db.sale_items.toArray(),
-    db.sync_queue.toArray(),
-    db.trial_usage.toArray(),
-    db.settings.toArray(),
-    db.prefs.toArray(),
-  ]);
+  const [products, sales, saleItems, syncQueue, trialUsage, settings, prefs, users, stockMovements] =
+    await Promise.all([
+      db.products.toArray(),
+      db.sales.toArray(),
+      db.sale_items.toArray(),
+      db.sync_queue.toArray(),
+      db.trial_usage.toArray(),
+      db.settings.toArray(),
+      db.prefs.toArray(),
+      db.users.toArray(),
+      db.stock_movements.toArray(),
+    ]);
   return parseBackupFile({
     tables: {
       products,
@@ -119,6 +139,8 @@ async function readTables(): Promise<BackupTables> {
       trial_usage: trialUsage,
       settings,
       prefs,
+      users,
+      stock_movements: stockMovements,
     },
   });
 }
@@ -140,7 +162,7 @@ export const databaseBackupService = {
     const fileName = backupFileName(deviceId || 'unknown', createdAt);
     const payload: BackupFile = {
       format: 'nutapos-staff-backup',
-      version: 1,
+      version: 2,
       created_at: createdAt,
       device_id: deviceId || 'unknown',
       app_version: APP_VERSION,
@@ -154,7 +176,7 @@ export const databaseBackupService = {
     if (download) downloadTextFile(fileName, json, 'application/json');
 
     const blob = new Blob([json], { type: 'application/json' });
-    void postStaffBackup(blob, fileName, {
+    void postOfflineLicenseBackup(blob, fileName, {
       device_id: deviceId || 'unknown',
       app_version: APP_VERSION,
       build_number: 'pwa',
@@ -199,10 +221,12 @@ export const databaseBackupService = {
   },
 
   async runDailyBackupIfDue(): Promise<void> {
-    if (!(await getStoredAccessToken())) return;
+    const license = await licenseRepository.get();
+    if (!license?.entitlement_token) return;
     if (!(await this.shouldRunDailyBackup())) return;
     try {
-      await this.createBackup({ download: false });
+      // Always download a copyable JSON file onto the device.
+      await this.createBackup({ download: true });
     } catch {
       // A failed daily backup does not fail login.
     }
@@ -224,7 +248,17 @@ async function trimBackups(): Promise<void> {
 async function replaceLocalTables(tables: BackupTables): Promise<void> {
   await db.transaction(
     'rw',
-    [db.products, db.sales, db.sale_items, db.sync_queue, db.trial_usage, db.settings, db.prefs],
+    [
+      db.products,
+      db.sales,
+      db.sale_items,
+      db.sync_queue,
+      db.trial_usage,
+      db.settings,
+      db.prefs,
+      db.users,
+      db.stock_movements,
+    ],
     async () => {
       await db.products.clear();
       await db.sales.clear();
@@ -233,6 +267,8 @@ async function replaceLocalTables(tables: BackupTables): Promise<void> {
       await db.trial_usage.clear();
       await db.settings.clear();
       await db.prefs.clear();
+      await db.users.clear();
+      await db.stock_movements.clear();
       if (tables.products.length) await db.products.bulkAdd(tables.products);
       if (tables.sales.length) await db.sales.bulkAdd(tables.sales);
       if (tables.sale_items.length) await db.sale_items.bulkAdd(tables.sale_items);
@@ -240,6 +276,8 @@ async function replaceLocalTables(tables: BackupTables): Promise<void> {
       if (tables.trial_usage.length) await db.trial_usage.bulkAdd(tables.trial_usage);
       if (tables.settings.length) await db.settings.bulkAdd(tables.settings);
       if (tables.prefs.length) await db.prefs.bulkAdd(tables.prefs);
+      if (tables.users.length) await db.users.bulkAdd(tables.users);
+      if (tables.stock_movements.length) await db.stock_movements.bulkAdd(tables.stock_movements);
     },
   );
 }

@@ -246,7 +246,10 @@ export function SettingsPage() {
         <p className="hint" style={text.caption}>
           Last backup
         </p>
-        <p className="hint">A daily backup runs when you open the app; you can create one anytime.</p>
+        <p className="hint">
+          A daily backup runs when you open the app (downloads a JSON file and uploads to the cloud). You can create one
+          anytime.
+        </p>
         <div className="sheet-actions">
           <Button
             title={backingUp ? 'Creating backup…' : 'Create backup now'}
