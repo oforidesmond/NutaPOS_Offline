@@ -45,7 +45,7 @@ export async function postOfflineLicenseBackup(
 
   const state = await licenseRepository.get();
   const entitlement = state?.entitlement_token?.trim();
-  if (!entitlement) return;
+  if (!state || !entitlement) return;
 
   const identity = await getDeviceIdentity().catch(() => null);
   const deviceId = meta?.device_id || identity?.deviceId || state.device_id;
