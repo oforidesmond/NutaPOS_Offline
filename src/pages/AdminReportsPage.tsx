@@ -324,7 +324,7 @@ function AdminReportsInner() {
             <section className="report-section" aria-label="Stock">
               <p style={text.title2}>Stock attention</p>
               <p style={text.caption}>
-                Inventory retail value {money(stock?.inventoryRetailValue ?? 0)}. Reorder points & expiry coming later.
+                Inventory retail value {money(stock?.inventoryRetailValue ?? 0)}.
               </p>
               {stock && stock.lowStock.length > 0 ? (
                 <div className="stack">

@@ -750,6 +750,15 @@ h2 {
   color: var(--warn);
 }
 
+.banner-success {
+  margin: 0;
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-md);
+  background: #f0fdf4;
+  color: #166534;
+}
+
 .variance-card {
   padding: var(--space-md);
   border: 1px solid var(--border);
@@ -1468,4 +1477,52 @@ h2 {
   .report-kpi-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+}
+
+.products-page {
+  gap: var(--space-md);
+}
+
+.products-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.products-list {
+  gap: 0;
+}
+
+.products-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.products-row-main p {
+  margin: 0;
+}
+
+.products-row-stock {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.products-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.products-empty {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-lg) 0;
+}
+
+.products-import-skips ul {
+  margin: var(--space-xs) 0 0;
+  padding-left: 1.25rem;
 }
