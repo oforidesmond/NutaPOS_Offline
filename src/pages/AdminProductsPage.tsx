@@ -20,6 +20,8 @@ import { text } from '@/theme';
 type FormMode = 'closed' | 'add' | 'edit';
 type AdjustMode = 'add' | 'remove';
 
+const PAGE_SIZE = 3;
+
 function money(n: number): string {
   return `GHS ${n.toFixed(2)}`;
 }
@@ -40,6 +42,7 @@ function AdminProductsInner() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -80,6 +83,21 @@ function AdminProductsInner() {
       return haystack.includes(q);
     });
   }, [products, query]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount - 1);
+  const pageItems = useMemo(() => {
+    const start = safePage * PAGE_SIZE;
+    return filtered.slice(start, start + PAGE_SIZE);
+  }, [filtered, safePage]);
+
+  useEffect(() => {
+    setPage(0);
+  }, [query]);
+
+  useEffect(() => {
+    if (page > pageCount - 1) setPage(Math.max(0, pageCount - 1));
+  }, [page, pageCount]);
 
   const closeForm = () => {
     setFormMode('closed');
@@ -299,7 +317,8 @@ function AdminProductsInner() {
             <p style={text.headline}>Catalog</p>
             <p style={text.caption}>
               {products.length} product{products.length === 1 ? '' : 's'}
-              {query.trim() ? ` · showing ${filtered.length}` : ''}
+              {query.trim() ? ` · ${filtered.length} match${filtered.length === 1 ? '' : 'es'}` : ''}
+              {filtered.length > 0 ? ` · page ${safePage + 1} of ${pageCount}` : ''}
             </p>
           </div>
         </div>
@@ -343,28 +362,54 @@ function AdminProductsInner() {
             ) : null}
           </div>
         ) : (
-          <div className="stack products-list">
-            {filtered.map((p) => (
-              <div key={p.id} className="list-row products-row">
-                <div className="products-row-main">
-                  <p style={text.body}>{p.name}</p>
-                  <p style={text.caption}>
-                    Sell {money(p.price)}
-                    {p.cost_price != null ? ` · Cost ${money(p.cost_price)}` : ''}
-                    {p.barcode ? ` · ${p.barcode}` : ''}
-                  </p>
+          <>
+            <div className="stack products-list">
+              {pageItems.map((p) => (
+                <div key={p.id} className="list-row products-row">
+                  <div className="products-row-main">
+                    <p style={text.body}>{p.name}</p>
+                    <p style={text.caption}>
+                      Sell {money(p.price)}
+                      {p.cost_price != null ? ` · Cost ${money(p.cost_price)}` : ''}
+                      {p.barcode ? ` · ${p.barcode}` : ''}
+                    </p>
+                  </div>
+                  <div className="products-row-stock">
+                    <span className="badge">Stock {formatQty(p.stock_quantity)}</span>
+                  </div>
+                  <div className="products-row-actions">
+                    <Button title="Edit" variant="secondary" onClick={() => openEdit(p)} />
+                    <Button title="Adjust stock" variant="secondary" onClick={() => openAdjust(p)} />
+                    <Button title="Delete" variant="dangerOutline" onClick={() => setConfirmDelete(p)} />
+                  </div>
                 </div>
-                <div className="products-row-stock">
-                  <span className="badge">Stock {formatQty(p.stock_quantity)}</span>
-                </div>
-                <div className="products-row-actions">
-                  <Button title="Edit" variant="secondary" onClick={() => openEdit(p)} />
-                  <Button title="Adjust stock" variant="secondary" onClick={() => openAdjust(p)} />
-                  <Button title="Delete" variant="dangerOutline" onClick={() => setConfirmDelete(p)} />
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+
+            {pageCount > 1 ? (
+              <nav className="products-pager" aria-label="Catalog pages">
+                <button
+                  type="button"
+                  className="products-pager-btn"
+                  disabled={safePage <= 0}
+                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                >
+                  Prev
+                </button>
+                <span className="products-pager-label" style={text.caption}>
+                  {safePage + 1} / {pageCount}
+                </span>
+                <button
+                  type="button"
+                  className="products-pager-btn products-pager-btn-next"
+                  disabled={safePage >= pageCount - 1}
+                  onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+                >
+                  Next
+                </button>
+              </nav>
+            ) : null}
+          </>
         )}
       </div>
 
