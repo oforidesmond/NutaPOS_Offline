@@ -16,6 +16,8 @@ export type InsertSaleInput = {
     quantity: number;
     unitPrice: number;
     totalPrice: number;
+    /** Cost at sale time; null when unknown. */
+    unitCost?: number | null;
     isTemporaryProduct: boolean;
     stockDelta: number;
     /** Stock-variance metadata frozen at sale time (mirrors sync payload). */
@@ -58,6 +60,7 @@ export async function insertLocalSaleTx(input: InsertSaleInput): Promise<void> {
         quantity: line.quantity,
         unit_price: line.unitPrice,
         total_price: line.totalPrice,
+        unit_cost: line.unitCost ?? null,
         is_temporary_product: line.isTemporaryProduct ? 1 : 0,
         variance_reason: line.varianceReason ?? null,
         variance_note: line.varianceNote ?? null,
@@ -234,6 +237,8 @@ export type InsertReturnInput = {
     quantity: number;
     unitPrice: number;
     totalPrice: number;
+    /** Cost frozen from the original sale line when available. */
+    unitCost?: number | null;
     isTemporaryProduct: boolean;
     stockDelta: number;
   }[];
@@ -269,6 +274,7 @@ export async function insertLocalReturnTx(input: InsertReturnInput): Promise<voi
         quantity: line.quantity,
         unit_price: line.unitPrice,
         total_price: line.totalPrice,
+        unit_cost: line.unitCost ?? null,
         is_temporary_product: line.isTemporaryProduct ? 1 : 0,
         variance_reason: null,
         variance_note: null,
@@ -285,6 +291,20 @@ export async function insertLocalReturnTx(input: InsertReturnInput): Promise<voi
   });
 }
 
+/**
+ * All sales (including returns) in a sold_at range. No row cap — for analytics.
+ */
+export async function listSalesInRange(dateFrom?: string, dateTo?: string): Promise<Sale[]> {
+  const rows = await db.sales.toArray();
+  const matched = rows.filter((sale) => {
+    if (dateFrom && sale.sold_at < dateFrom) return false;
+    if (dateTo && sale.sold_at > dateTo) return false;
+    return true;
+  });
+  matched.sort((a, b) => (a.sold_at < b.sold_at ? 1 : a.sold_at > b.sold_at ? -1 : 0));
+  return matched;
+}
+
 export const saleRepository = {
   markSynced,
   updateSaleAmounts,
@@ -292,4 +312,5 @@ export const saleRepository = {
   insertLocalReturnTx,
   getSaleWithItems,
   searchSales,
+  listSalesInRange,
 };

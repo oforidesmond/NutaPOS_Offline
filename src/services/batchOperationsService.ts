@@ -92,6 +92,8 @@ export const batchOperationsService = {
       'Product',
       'Qty',
       'Unit price',
+      'Unit cost',
+      'Line profit',
       'Sale total',
       'Sale tax',
       'Payment',
@@ -117,12 +119,19 @@ function isOldSyncedSale(sale: Sale, cutoff: string): boolean {
 }
 
 function csvRow(sale: Sale, item: SaleItem | null, productName: string): string {
+  const unitCost = item?.unit_cost;
+  const lineProfit =
+    item != null && unitCost != null && Number.isFinite(unitCost)
+      ? Math.round((item.total_price - unitCost * item.quantity) * 100) / 100
+      : '';
   return [
     sale.receipt_number,
     sale.sold_at,
     productName,
     formatQty(item?.quantity ?? Number.NaN),
     item?.unit_price,
+    unitCost ?? '',
+    lineProfit,
     sale.total_amount,
     sale.tax_amount,
     sale.payment_method,

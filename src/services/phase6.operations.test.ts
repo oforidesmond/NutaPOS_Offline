@@ -67,6 +67,7 @@ function item(overrides: Partial<SaleItem> = {}): SaleItem {
     quantity: 2,
     unit_price: 2,
     total_price: 4,
+    unit_cost: 1,
     is_temporary_product: 0,
     variance_reason: null,
     variance_note: null,
@@ -150,10 +151,12 @@ describe('phase 6 local operations', () => {
 
     const csv = await batchOperationsService.exportSalesCSV({ start: '2026-06-01', end: '2026-06-30' });
     const lines = csv.split('\n');
-    expect(lines[0]).toBe('Receipt,Sold at,Product,Qty,Unit price,Sale total,Sale tax,Payment,Synced');
-    expect(csv).toContain('RCP-SYNC,2026-06-15T12:00:00.000Z,Apple,1.5,2,4,0.4,CASH,yes');
-    expect(csv).toContain('RCP-LOCAL,2026-06-16T08:00:00.000Z,,2,2,4,0.4,CARD,no');
-    expect(csv).toContain('RCP-EMPTY,2026-06-17T08:00:00.000Z,,0,,4,0.4,CASH,yes');
+    expect(lines[0]).toBe(
+      'Receipt,Sold at,Product,Qty,Unit price,Unit cost,Line profit,Sale total,Sale tax,Payment,Synced',
+    );
+    expect(csv).toContain('RCP-SYNC,2026-06-15T12:00:00.000Z,Apple,1.5,2,1,2.5,4,0.4,CASH,yes');
+    expect(csv).toContain('RCP-LOCAL,2026-06-16T08:00:00.000Z,,2,2,1,2,4,0.4,CARD,no');
+    expect(csv).toContain('RCP-EMPTY,2026-06-17T08:00:00.000Z,,0,,,,4,0.4,CASH,yes');
     expect(csv).not.toContain('RCP-RET');
   });
 

@@ -60,6 +60,7 @@ describe('returnService', () => {
       quantity: 1,
       unit_price: 2.5,
       total_price: 2.5,
+      unit_cost: 1,
       is_temporary_product: 0,
       variance_reason: null,
       variance_note: null,

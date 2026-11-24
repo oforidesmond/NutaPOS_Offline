@@ -89,6 +89,7 @@ Indexes: `barcode`, `sku`, `name`.
 | `product_id` | required |
 | `quantity` | number |
 | `unit_price`, `total_price` | numbers. `total_price` is the pre-tax line subtotal |
+| `unit_cost` | nullable number frozen at sale/return time (Dexie v2); null for older rows |
 | `is_temporary_product` | 0 or 1 |
 | `variance_reason`, `variance_note` | nullable strings |
 
@@ -189,7 +190,8 @@ Empty states, skeletons, and toasts should feel like the mobile app. Use a toast
 - Do not invent business rules. Copy them from the named files.
 - Service-worker cache is for the app shell (HTML, JS, CSS, fonts, icons). Do not cache API GET responses as the source of truth. Catalog, sales, and settings live in IndexedDB.
 - The sync worker runs only while the app is open and online. That matches the mobile app, which has no background task. The Background Sync API may wake an upload when the browser supports it, but the in-app worker is still required.
-- Out of scope for the whole project: Android APK self-update, the USB OTG native module, API changes, dark mode, a category browser, printing a return as its own slip, reports, and Z-reports.
+- Out of scope for the whole project: Android APK self-update, the USB OTG native module, API changes, dark mode, a category browser, printing a return as its own slip, and Z-reports / cash-drawer close.
+- **Offline Reports v1 (in scope):** Admin `/admin/reports` shows on-device period KPIs (net sales, txns, returns, payment mix, top products, staff, low stock, gross profit from frozen `sale_items.unit_cost`). Sales history shows a period summary strip. Hub `/reports` deep links remain non-navigable. Expiry/batch/reorder analytics and server history pull are still later.
 
 ### Routes
 
@@ -202,7 +204,8 @@ Empty states, skeletons, and toasts should feel like the mobile app. Use a toast
 | `/scanner` | `app/scanner.tsx` | Phase 3 |
 | `/product-search` | `app/product-search.tsx` | Phase 3 |
 | `/returns` | `app/returns.tsx` | Phase 5 |
-| `/sales-history` | `app/sales-history.tsx` | Phase 4 |
+| `/sales-history` | `app/sales-history.tsx` | Phase 4 (+ period summary strip) |
+| `/admin/reports` | (offline-only) | Offline Reports v1 — admin KPIs |
 | `/settings` | `app/settings.tsx` | Shell in Phase 1, sync actions in Phase 5, rest in Phase 6 |
 | `/backups` | `app/backups.tsx` | Phase 6 |
 | `/printer-settings` | `app/printer-settings.tsx` | Phase 4 |

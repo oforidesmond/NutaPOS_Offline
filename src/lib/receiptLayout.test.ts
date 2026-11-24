@@ -57,6 +57,7 @@ const sampleSale = {
       quantity: 1,
       unit_price: 5,
       total_price: 5,
+      unit_cost: 2,
       is_temporary_product: 0 as const,
       variance_reason: null,
       variance_note: null,

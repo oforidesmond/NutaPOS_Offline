@@ -41,6 +41,8 @@ export interface SaleItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  /** Cost frozen at sale/return time; null for rows written before analytics v1. */
+  unit_cost: number | null;
   is_temporary_product: Flag;
   variance_reason: string | null;
   variance_note: string | null;
@@ -162,7 +164,7 @@ export class NutaPosOfflineDatabase extends Dexie {
 
   constructor() {
     super('nutapos_offline');
-    this.version(1).stores({
+    const stores = {
       products: 'id, barcode, sku, name',
       sales: 'id, receipt_number, sold_at, synced_at',
       sale_items: 'id, sale_id, product_id',
@@ -176,7 +178,10 @@ export class NutaPosOfflineDatabase extends Dexie {
       stock_movements: 'id, product_id, created_at',
       license_state: 'id',
       license_state_mirror: 'id',
-    });
+    };
+    this.version(1).stores(stores);
+    // v2: SaleItem.unit_cost (additive; existing rows stay null — do not backfill).
+    this.version(2).stores(stores);
   }
 }
 

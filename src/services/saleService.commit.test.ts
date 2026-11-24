@@ -221,6 +221,7 @@ describe('completeSale offline commit', () => {
     });
     const saved = await db.sale_items.where('sale_id').equals(saleId).first();
     expect(saved?.total_price).toBe(50);
+    expect(saved?.unit_cost).toBe(1);
     const queue = await db.sync_queue.orderBy('id').toArray();
     const body = (queue[0].payload as { body: StaffSalePayload }).body;
     expect(body.items[0].lineTotal).toBe(55);

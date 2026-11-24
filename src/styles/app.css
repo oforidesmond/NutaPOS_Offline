@@ -1349,6 +1349,113 @@ h2 {
   white-space: pre-wrap;
 }
 
+.report-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  padding-top: var(--space-md);
+  border-top: 1px solid var(--border);
+}
+
+.report-section-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.report-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+}
+
+.report-kpi {
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+}
+
+.report-kpi-label {
+  margin: 0;
+}
+
+.report-kpi-value {
+  margin: var(--space-xs) 0 0;
+}
+
+.report-kpi-hint {
+  margin: var(--space-xs) 0 0;
+}
+
+.report-day-nav {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: var(--space-sm);
+  align-items: end;
+}
+
+.report-pay-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.report-pay-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-sm);
+}
+
+.report-pay-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.report-pay-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand);
+}
+
+.report-list-row,
+.list-row {
+  display: block;
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border);
+  color: inherit;
+  text-decoration: none;
+}
+
+.report-glance {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--white);
+  border-bottom: 1px solid var(--border);
+}
+
+.report-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-sm);
+  padding: var(--space-md);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--page);
+}
+
+.report-summary-strip p {
+  margin: 0;
+}
+
 @media (min-width: 1024px) {
   .sheet {
     width: min(560px, 100%);
@@ -1356,5 +1463,9 @@ h2 {
 
   .filter-pair {
     flex-wrap: wrap;
+  }
+
+  .report-kpi-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }

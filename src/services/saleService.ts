@@ -105,6 +105,7 @@ export const saleService = {
         quantity,
         unitPrice: product.price,
         totalPrice: lineSub,
+        unitCost: product.cost_price ?? 0,
         isTemporaryProduct: product.is_temporary === 1,
         stockDelta: -quantity,
         varianceReason: lineVariance?.varianceReason ?? null,

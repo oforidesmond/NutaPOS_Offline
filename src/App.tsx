@@ -9,6 +9,7 @@ import { AdminAgentsPage } from '@/pages/AdminAgentsPage';
 import { AdminHomePage } from '@/pages/AdminHomePage';
 import { AdminLicensePage } from '@/pages/AdminLicensePage';
 import { AdminProductsPage } from '@/pages/AdminProductsPage';
+import { AdminReportsPage } from '@/pages/AdminReportsPage';
 import { AdminShopPage } from '@/pages/AdminShopPage';
 import { AdminUnlockPage } from '@/pages/AdminUnlockPage';
 import { BackupsPage } from '@/pages/BackupsPage';
@@ -94,6 +95,14 @@ export function App() {
             />
             <Route path="/admin/unlock" element={<AdminUnlockPage />} />
             <Route path="/admin" element={<AdminHomePage />} />
+            <Route
+              path="/admin/reports"
+              element={
+                <RequireAdmin>
+                  <AdminReportsPage />
+                </RequireAdmin>
+              }
+            />
             <Route
               path="/admin/products"
               element={

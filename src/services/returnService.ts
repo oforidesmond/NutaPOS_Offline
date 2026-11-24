@@ -58,7 +58,7 @@ export const returnService = {
       throw new Error('Original sale not found');
     }
 
-    const originalByProduct = new Map<string, { quantity: number }[]>();
+    const originalByProduct = new Map<string, { quantity: number; unit_cost: number | null }[]>();
     for (const item of bundle.items) {
       const list = originalByProduct.get(item.product_id) ?? [];
       list.push(item);
@@ -86,12 +86,15 @@ export const returnService = {
       }
       const lineTotal = Math.round(quantity * line.unitPrice * 100) / 100;
       refundTotal += lineTotal;
+      // Prefer the first original line's frozen cost for this product.
+      const frozenCost = originals[0]?.unit_cost ?? null;
       insertItems.push({
         id: crypto.randomUUID(),
         productId: line.productId,
         quantity,
         unitPrice: line.unitPrice,
         totalPrice: lineTotal,
+        unitCost: frozenCost,
         isTemporaryProduct: line.isTemporaryProduct,
         stockDelta: quantity,
       });
